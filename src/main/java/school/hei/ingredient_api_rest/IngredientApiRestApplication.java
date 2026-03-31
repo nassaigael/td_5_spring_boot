@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class IngredientApiRestApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(IngredientApiRestApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(IngredientApiRestApplication.class, args);
+    }
 
 }
