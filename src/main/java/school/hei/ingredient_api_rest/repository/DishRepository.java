@@ -25,7 +25,10 @@ public class DishRepository implements Repository<Dish, Integer> {
     }
 
     private Dish insert(Dish dish) throws SQLException {
-        String sql = "INSERT INTO dish (name, dish_type, selling_price) VALUES (?, ?, ?) RETURNING id";
+        String sql = """
+                INSERT INTO dish (name, dish_type, selling_price) 
+                VALUES (?, CAST(? as dish_type), ?) RETURNING id
+                """;
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -47,7 +50,10 @@ public class DishRepository implements Repository<Dish, Integer> {
     }
 
     private Dish update(Dish dish) throws SQLException {
-        String sql = "UPDATE dish SET name = ?, dish_type = ?, selling_price = ? WHERE id = ?";
+        String sql = """
+                UPDATE dish SET name = ?, dish_type = cast(? as dish_type), selling_price = ?
+                            WHERE id = ?
+                """;
 
         try (Connection conn = dataSource.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -163,10 +169,8 @@ public class DishRepository implements Repository<Dish, Integer> {
 
     @Override
     public void deleteById(Integer id) throws SQLException {
-        // D'abord supprimer les associations dans dish_ingredient
         dishIngredientRepository.deleteByDishId(id);
 
-        // Ensuite supprimer le plat
         String sql = "DELETE FROM dish WHERE id = ?";
 
         try (Connection conn = dataSource.getConnection();
@@ -202,6 +206,58 @@ public class DishRepository implements Repository<Dish, Integer> {
             }
         }
         return 0;
+    }
+
+
+    public List<Dish> findByCriteria(String name, Double priceMin, Double priceMax) throws SQLException {
+        List<Dish> dishes = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT id, name, dish_type, selling_price FROM dish WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (name != null && !name.trim().isEmpty()) {
+            sql.append(" AND name ILIKE ?");
+            params.add("%" + name + "%");
+        }
+
+        if (priceMin != null) {
+            sql.append(" AND selling_price >= ?");
+            params.add(priceMin);
+        }
+
+        if (priceMax != null) {
+            sql.append(" AND selling_price <= ?");
+            params.add(priceMax);
+        }
+
+        sql.append(" ORDER BY id");
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                Dish dish = mapDish(rs);
+                dish.setIngredients(dishIngredientRepository.findIngredientsByDishId(dish.getId()));
+                dishes.add(dish);
+            }
+        }
+        return dishes;
+    }
+
+    public boolean existsByName(String name) throws SQLException {
+        String sql = "SELECT 1 FROM dish WHERE name = ?";
+
+        try (Connection conn = dataSource.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, name);
+            ResultSet rs = pstmt.executeQuery();
+            return rs.next();
+        }
     }
 
     private Dish mapDish(ResultSet rs) throws SQLException {

@@ -17,7 +17,7 @@ public class DishIngredientRepository {
     public void saveAssociation(int dishId, int ingredientId, double quantity, Unit unit) throws SQLException {
         String sql = """
             INSERT INTO dish_ingredient (id_dish, id_ingredient, required_quantity, unit)
-            VALUES (?, ?, ?, ?)
+            VALUES (?, ?, ?, cast(? as unit))
             ON CONFLICT (id_ingredient, id_dish) DO UPDATE SET
                 required_quantity = EXCLUDED.required_quantity,
                 unit = EXCLUDED.unit
@@ -40,11 +40,12 @@ public class DishIngredientRepository {
             conn = dataSource.getConnection();
             conn.setAutoCommit(false);
 
-            // Supprimer les anciennes associations
             deleteByDishId(dishId, conn);
 
-            // Ajouter les nouvelles associations (avec quantité et unité par défaut)
-            String insertSql = "INSERT INTO dish_ingredient (id_dish, id_ingredient, required_quantity, unit) VALUES (?, ?, ?, ?)";
+            String insertSql = """
+                    INSERT INTO dish_ingredient (id_dish, id_ingredient, required_quantity, unit) 
+                    VALUES (?, ?, ?, CAST(? AS unit))
+                    """;
             try (PreparedStatement pstmt = conn.prepareStatement(insertSql)) {
                 for (Ingredient ingredient : ingredients) {
                     pstmt.setInt(1, dishId);

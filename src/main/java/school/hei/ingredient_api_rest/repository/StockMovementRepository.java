@@ -27,7 +27,7 @@ public class StockMovementRepository implements Repository<StockMovement, Intege
     private StockMovement insert(StockMovement movement) throws SQLException {
         String sql = """
             INSERT INTO stock_movement (id_ingredient, quantity, unit, type, creation_datetime)
-            VALUES (?, ?, ?, ?, ?) RETURNING id
+            VALUES (?, ?, cast(? as unit), cast(? as movement_type), ?) RETURNING id
         """;
 
         try (Connection conn = dataSource.getConnection();
@@ -50,7 +50,7 @@ public class StockMovementRepository implements Repository<StockMovement, Intege
     private StockMovement update(StockMovement movement) throws SQLException {
         String sql = """
             UPDATE stock_movement 
-            SET id_ingredient = ?, quantity = ?, unit = ?, type = ?, creation_datetime = ?
+            SET id_ingredient = ?, quantity = ?, unit = cast(? as unit), type = ?, creation_datetime = ?
             WHERE id = ?
         """;
 

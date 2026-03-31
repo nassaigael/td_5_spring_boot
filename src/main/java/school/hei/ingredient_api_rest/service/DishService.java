@@ -10,6 +10,7 @@ import school.hei.ingredient_api_rest.repository.DishRepository;
 import school.hei.ingredient_api_rest.repository.IngredientRepository;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,6 +34,27 @@ public class DishService {
     }
 
     @Transactional
+    public List<Dish> createDishes(List<Dish> dishes) throws SQLException {
+        List<Dish> createdDishes = new ArrayList<>();
+
+        for (Dish dish : dishes) {
+            if (dishRepository.existsByName(dish.getName()))
+                throw new RuntimeException("Dish.name=" + dish.getName() + " already exists");
+            Dish savedDish = dishRepository.save(dish);
+
+            if (dish.getIngredients() != null && !dish.getIngredients().isEmpty()) {
+                dishIngredientRepository.updateDishIngredients(savedDish.getId(), dish.getIngredients());
+                savedDish.setIngredients(dish.getIngredients());
+            } else
+                savedDish.setIngredients(List.of());
+
+            createdDishes.add(savedDish);
+        }
+
+        return createdDishes;
+    }
+
+    @Transactional
     public Dish updateDish(Integer id, Dish dish) throws SQLException {
         if (!dishRepository.existsById(id))
             throw new RuntimeException("Dish with id " + id + " not found");
@@ -46,6 +68,10 @@ public class DishService {
         }
 
         return updatedDish;
+    }
+
+    public List<Dish> getDishesWithFilters(String name, Double priceMin, Double priceMax) throws SQLException {
+        return dishRepository.findByCriteria(name, priceMin, priceMax);
     }
 
     public Dish getDishById(Integer id) throws SQLException {
