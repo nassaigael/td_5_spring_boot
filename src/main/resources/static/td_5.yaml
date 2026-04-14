@@ -1,12 +1,146 @@
 openapi: "3.1.0"
 info:
-  title: API Title
-  version: "1.0"
+  title: "ingredient_api_rest API"
+  description: "ingredient_api_rest API"
+  version: "1.0.0"
 servers:
-  - url: https://api.server.test/v1
+  - url: "http://localhost:8080"
 paths:
-  /test:
+  /ingredients:
     get:
+      summary: "GET ingredients"
+      operationId: "getAllIngredients"
       responses:
-        '200':
-          description: OK
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Ingredient"
+  /ingredients/{id}:
+    get:
+      summary: "GET ingredients/{id}"
+      operationId: "getIngredientById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ingredient"
+        "404":
+          description: "Ingredient not found"
+  /ingredients/{id}/stock:
+    get:
+      summary: "GET ingredients/{id}/stock"
+      operationId: "getStockValue"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+        - name: "at"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+        - name: "unit"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "object"
+                properties:
+                  unit:
+                    type: "string"
+                  value:
+                    type: "number"
+        "400":
+          description: "Missing mandatory parameters"
+        "404":
+          description: "Ingredient not found"
+  /dishes:
+    get:
+      summary: "GET dishes"
+      operationId: "getAllDishes"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Dish"
+  /dishes/{id}/ingredients:
+    put:
+      summary: "PUT dishes/{id}/ingredients"
+      operationId: "updateDishIngredients"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                $ref: "#/components/schemas/Ingredient"
+      responses:
+        "200":
+          description: "OK"
+        "400":
+          description: "Missing request body"
+        "404":
+          description: "Dish not found"
+components:
+  schemas:
+    Ingredient:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+        name:
+          type: "string"
+        price:
+          type: "number"
+        category:
+          type: "string"
+          enum:
+            - "VEGETABLE"
+            - "ANIMAL"
+            - "MARINE"
+            - "DAIRY"
+            - "OTHER"
+    Dish:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+        name:
+          type: "string"
+        sellingPrice:
+          type: "number"
+        ingredients:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Ingredient"
